@@ -213,8 +213,8 @@ If you use this code in your research, please cite:
 @software{predictive_healthcare_meds,
   title = {Predictive Healthcare MEDS: A Framework for Medical Event Prediction},
   author = {Ra'uf Fauzan Rambe},
-  year = {2024},
-  url = {https://github.com/yourusername/predictive-healthcare-meds}
+  year = {2026},
+  url = {https://github.com/RaufFauzanRambe/Predictive-Healthcare-MEDS-based-}
 }
 ```
 
