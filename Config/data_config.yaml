@@ -1,0 +1,127 @@
+# =============================================================================
+# Data Configuration - predictive-healthcare-meds
+# =============================================================================
+# Settings for data loading, preprocessing, feature engineering,
+# and MEDS format conversion.
+
+# ── Raw Data Settings ─────────────────────────────────────────────────────────
+raw_data:
+  file_format: "csv"              # csv | json | parquet
+  date_columns:
+    - "admission_date"
+    - "discharge_date"
+    - "observation_date"
+  patient_id_column: "patient_id"
+  event_id_column: "event_id"
+  target_column: "readmission_30day"
+  timestamp_column: "observation_date"
+
+# ── Column Definitions ────────────────────────────────────────────────────────
+columns:
+  numeric:
+    - "age"
+    - "bmi"
+    - "blood_pressure_systolic"
+    - "blood_pressure_diastolic"
+    - "heart_rate"
+    - "respiratory_rate"
+    - "oxygen_saturation"
+    - "temperature"
+    - "white_blood_cell_count"
+    - "hemoglobin"
+    - "platelet_count"
+    - "creatinine"
+    - "glucose"
+    - "length_of_stay"
+    - "num_prior_admissions"
+    - "num_medications"
+    - "num_procedures"
+    - "num_diagnoses"
+  categorical:
+    - "gender"
+    - "race"
+    - "admission_type"
+    - "insurance_type"
+    - "primary_diagnosis"
+    - "discharge_disposition"
+    - "icu_stay"
+  binary:
+    - "has_diabetes"
+    - "has_hypertension"
+    - "has_chd"
+    - "has_copd"
+    - "has_renal_disease"
+    - "smoker"
+
+# ── Preprocessing Rules ───────────────────────────────────────────────────────
+preprocessing:
+  missing_values:
+    strategy: "median"             # mean | median | mode | knn | iterative
+    knn_neighbors: 5               # Only if strategy=knn
+    max_missing_ratio: 0.8         # Drop columns with >80% missing
+    indicator_features: true       # Add binary missing-indicator columns
+  outliers:
+    method: "iqr"                  # iqr | zscore | winsorize
+    iqr_factor: 1.5
+    zscore_threshold: 3.0
+    winsorize_limits: [0.01, 0.99]
+    action: "clip"                 # clip | remove | flag
+  normalization:
+    method: "standard"             # standard | minmax | robust | quantile
+  encoding:
+    categorical_method: "target"   # onehot | label | target | frequency
+    max_categories: 20             # One-hot encode only if <= this many unique values
+    handle_unknown: "most_frequent"
+  time_series:
+    resample_freq: "1H"            # Resample to hourly intervals
+    interpolation: "linear"        # linear | cubic | spline | pad
+    lookback_window: 48            # Hours of history per sample
+    forecast_horizon: 24           # Hours ahead to predict
+    aggregation:
+      numeric: "mean"             # Aggregation for resampling: mean | last | max | min
+      categorical: "last"
+
+# ── Feature Engineering ───────────────────────────────────────────────────────
+feature_engineering:
+  age_groups: true
+  age_bins: [0, 18, 35, 50, 65, 80, 120]
+  age_labels: ["pediatric", "young_adult", "adult", "middle_aged", "senior", "elderly"]
+  risk_scores: true
+  charlson_comorbidity_index: true
+  elixhauser_score: true
+  interaction_features: true
+  polynomial_features: false
+  polynomial_degree: 2
+  rolling_statistics: true
+  rolling_windows: [6, 12, 24, 48]   # Hours
+  diff_features: true              # First differences for time-series
+
+# ── MEDS Format ───────────────────────────────────────────────────────────────
+meds:
+  schema_version: "0.3"
+  patient_id_field: "subject_id"
+  event_id_field: "event_id"
+  timestamp_field: "timestamp"
+  code_field: "code"
+  numeric_value_field: "numeric_value"
+  metadata_fields:
+    - "source"
+    - "unit"
+  code_mappings:
+    diagnosis: "DIAG/"
+    medication: "MED/"
+    procedure: "PROC/"
+    lab: "LAB/"
+    vital: "VITAL/"
+  grouping:
+    group_by: "patient_id"
+    sort_by: "timestamp"
+    deduplicate: true
+
+# ── Dummy Data Generation ─────────────────────────────────────────────────────
+dummy_data:
+  enabled: true                    # Generate synthetic data when real data is unavailable
+  num_patients: 1000
+  num_events_per_patient: 50
+  time_span_days: 365
+  positive_rate: 0.25              # 25% readmission rate

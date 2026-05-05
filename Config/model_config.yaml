@@ -1,0 +1,78 @@
+# =============================================================================
+# Model Configuration - predictive-healthcare-meds
+# =============================================================================
+# Hyperparameters and architecture settings for all supported model types.
+# Supports: MLP, LSTM, Transformer
+
+# ── Shared Training Parameters ────────────────────────────────────────────────
+training:
+  learning_rate: 0.001
+  weight_decay: 1.0e-5
+  epochs: 50
+  batch_size: 64
+  early_stopping:
+    patience: 10
+    min_delta: 0.0001
+    monitor: "val_loss"
+    mode: "min"
+  scheduler:
+    type: "ReduceLROnPlateau"    # ReduceLROnPlateau | CosineAnnealingLR | StepLR
+    factor: 0.5
+    patience: 5
+    min_lr: 1.0e-6
+
+# ── Loss & Optimizer ──────────────────────────────────────────────────────────
+loss:
+  type: "BCEWithLogitsLoss"      # BCEWithLogitsLoss | CrossEntropyLoss | FocalLoss
+  pos_weight: null               # Set for class imbalance, e.g. [2.0]
+  label_smoothing: 0.0
+
+optimizer:
+  type: "Adam"                   # Adam | AdamW | SGD
+  momentum: 0.9                  # Only for SGD
+  betas: [0.9, 0.999]           # Only for Adam/AdamW
+
+# ── MLP Model ─────────────────────────────────────────────────────────────────
+mlp:
+  input_dim: 128                 # Must match feature dimension
+  hidden_dims: [256, 128, 64]
+  output_dim: 1                  # Binary classification
+  dropout: 0.3
+  activation: "ReLU"            # ReLU | GELU | LeakyReLU
+  use_batch_norm: true
+  use_layer_norm: false
+
+# ── LSTM Model ────────────────────────────────────────────────────────────────
+lstm:
+  input_dim: 128                 # Feature dimension per time step
+  hidden_dim: 128
+  num_layers: 2
+  output_dim: 1
+  dropout: 0.3
+  bidirectional: true
+  attention: true                # Use attention mechanism on LSTM outputs
+
+# ── Transformer Model ─────────────────────────────────────────────────────────
+transformer:
+  input_dim: 128
+  d_model: 128
+  nhead: 4
+  num_encoder_layers: 3
+  dim_feedforward: 512
+  output_dim: 1
+  dropout: 0.1
+  activation: "gelu"
+  max_seq_len: 512
+  positional_encoding: "sinusoidal"   # sinusoidal | learned
+
+# ── Model Selection ───────────────────────────────────────────────────────────
+active_model: "lstm"            # mlp | lstm | transformer
+
+# ── Checkpointing ─────────────────────────────────────────────────────────────
+checkpoint:
+  save_best: true
+  save_last: true
+  monitor: "val_loss"
+  mode: "min"
+  dirpath: "results/models/checkpoints"
+  filename: "{model_name}-{epoch:02d}-{val_loss:.4f}"

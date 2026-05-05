@@ -1,0 +1,58 @@
+# =============================================================================
+# Global Configuration - predictive-healthcare-meds
+# =============================================================================
+# This file contains project-wide settings including paths, logging,
+# random seeds, and experiment tracking configuration.
+
+project:
+  name: "predictive-healthcare-meds"
+  version: "1.0.0"
+  description: "Predictive healthcare analytics using MEDS-formatted data"
+  author: "Healthcare ML Team"
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+paths:
+  data_dir: "data"
+  raw_data_dir: "data/raw"
+  processed_data_dir: "data/processed"
+  meds_data_dir: "data/meds_format"
+  external_data_dir: "data/external"
+  model_dir: "results/models"
+  results_dir: "results"
+  log_dir: "results/logs"
+  experiment_dir: "experiments"
+  notebook_dir: "notebooks"
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level: "INFO"                # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  console_logging: true
+  file_logging: true
+  log_file: "results/logs/pipeline.log"
+
+# ── Random Seed & Reproducibility ─────────────────────────────────────────────
+seed: 42
+deterministic: true            # Enable deterministic operations for reproducibility
+
+# ── MLflow Experiment Tracking ────────────────────────────────────────────────
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "predictive-healthcare-meds"
+  artifact_location: "results/mlflow_artifacts"
+  log_models: true
+  log_params: true
+  log_metrics: true
+
+# ── Hardware ──────────────────────────────────────────────────────────────────
+device: "auto"                 # "auto", "cpu", "cuda", "mps"
+num_workers: 4
+pin_memory: true
+
+# ── Data Split Ratios ─────────────────────────────────────────────────────────
+data_split:
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  stratify: true               # Stratify splits by label for class balance
