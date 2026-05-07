@@ -1,0 +1,209 @@
+# =============================================================================
+# Konfigurasi Eksperimen - predictive-healthcare-meds
+# =============================================================================
+# File ini mendefinisikan semua skenario eksperimen yang bisa dijalankan
+# melalui experiment_runner.py. Setiap skenario memiliki konfigurasi
+# model, hyperparameter, dan strategi eksperimen yang berbeda.
+
+# ── Eksperimen 1: Perbandingan Model ─────────────────────────────────────────
+# Membandingkan performa tiga arsitektur (MLP, LSTM, Transformer)
+# pada data yang identik untuk menentukan model terbaik.
+
+model_comparison:
+  name: "Model Architecture Comparison"
+  description: >
+    Perbandingan menyeluruh tiga arsitektur neural network untuk
+    prediksi readmission 30 hari. Setiap model dilatih dengan
+    konfigurasi default yang optimal dari model_config.yaml.
+  experiment_type: "model_comparison"
+  model_types:
+    - mlp
+    - lstm
+    - transformer
+  overrides:
+    mlp:
+      training:
+        epochs: 50
+        learning_rate: 0.001
+        batch_size: 64
+    lstm:
+      training:
+        epochs: 50
+        learning_rate: 0.001
+        batch_size: 64
+    transformer:
+      training:
+        epochs: 50
+        learning_rate: 0.0005    # LR lebih rendah untuk Transformer
+        batch_size: 32           # Batch lebih kecil untuk stabilisasi
+  metric_to_optimize: "f1_score"
+
+# ── Eksperimen 2: Hyperparameter Sweep LSTM ──────────────────────────────────
+# Grid search untuk mencari kombinasi hyperparameter terbaik LSTM.
+
+lstm_hyperparameter_sweep:
+  name: "LSTM Hyperparameter Sweep"
+  description: >
+    Grid search komprehensif untuk menemukan kombinasi hyperparameter
+    optimal pada arsitektur LSTM. Menguji variasi learning rate,
+    batch size, hidden dimension, dan jumlah layer.
+  experiment_type: "hyperparameter_sweep"
+  model_type: "lstm"
+  param_grid:
+    training.learning_rate:
+      - 0.001
+      - 0.0005
+      - 0.0001
+    training.batch_size:
+      - 32
+      - 64
+      - 128
+    lstm.hidden_dim:
+      - 64
+      - 128
+      - 256
+    lstm.num_layers:
+      - 1
+      - 2
+      - 3
+  metric_to_optimize: "f1_score"
+  # Total kombinasi: 3 x 3 x 3 x 3 = 81 runs
+
+# ── Eksperimen 3: Hyperparameter Sweep Transformer ───────────────────────────
+# Grid search untuk arsitektur Transformer.
+
+transformer_hyperparameter_sweep:
+  name: "Transformer Hyperparameter Sweep"
+  description: >
+    Grid search untuk konfigurasi Transformer. Menguji dampak
+    variasi d_model, jumlah head, jumlah layer, dan dropout.
+  experiment_type: "hyperparameter_sweep"
+  model_type: "transformer"
+  param_grid:
+    training.learning_rate:
+      - 0.0005
+      - 0.0001
+    training.batch_size:
+      - 16
+      - 32
+    transformer.d_model:
+      - 64
+      - 128
+    transformer.nhead:
+      - 2
+      - 4
+    transformer.num_encoder_layers:
+      - 2
+      - 3
+  metric_to_optimize: "f1_score"
+  # Total kombinasi: 2 x 2 x 2 x 2 x 2 = 32 runs
+
+# ── Eksperimen 4: Ablation Study LSTM ────────────────────────────────────────
+# Menganalisis kontribusi setiap komponen LSTM terhadap performa.
+
+lstm_ablation:
+  name: "LSTM Ablation Study"
+  description: >
+    Ablation study untuk memahami kontribusi setiap komponen LSTM:
+    attention mechanism, bidirectional, jumlah layer, dan hidden dim.
+    Model penuh (full_model) digunakan sebagai baseline.
+  experiment_type: "ablation_study"
+  model_type: "lstm"
+  ablation_variants:
+    full_model: {}    # Baseline — semua komponen aktif
+    no_attention:
+      lstm:
+        attention: false
+    unidirectional:
+      lstm:
+        bidirectional: false
+    single_layer:
+      lstm:
+        num_layers: 1
+    smaller_hidden:
+      lstm:
+        hidden_dim: 64
+    no_dropout:
+      lstm:
+        dropout: 0.0
+    larger_hidden:
+      lstm:
+        hidden_dim: 256
+
+# ── Eksperimen 5: Ablation Study Transformer ─────────────────────────────────
+
+transformer_ablation:
+  name: "Transformer Ablation Study"
+  description: >
+    Ablation study untuk menganalisis kontribusi komponen Transformer:
+    jumlah layer, d_model, attention heads, dan jenis positional encoding.
+  experiment_type: "ablation_study"
+  model_type: "transformer"
+  ablation_variants:
+    full_model: {}
+    single_layer:
+      transformer:
+        num_encoder_layers: 1
+    two_layers:
+      transformer:
+        num_encoder_layers: 2
+    smaller_dmodel:
+      transformer:
+        d_model: 64
+    fewer_heads:
+      transformer:
+        nhead: 2
+    learned_pe:
+      transformer:
+        positional_encoding: "learned"
+    smaller_ffn:
+      transformer:
+        dim_feedforward: 256
+
+# ── Eksperimen 6: Learning Rate Sensitivity ──────────────────────────────────
+# Menguji sensitivitas model terhadap pilihan learning rate.
+
+learning_rate_sensitivity:
+  name: "Learning Rate Sensitivity Analysis"
+  description: >
+    Menguji dampak learning rate terhadap konvergensi dan performa
+    akhir model LSTM. Range dari sangat besar (0.01) hingga sangat
+    kecil (0.00001).
+  experiment_type: "hyperparameter_sweep"
+  model_type: "lstm"
+  param_grid:
+    training.learning_rate:
+      - 0.01
+      - 0.005
+      - 0.001
+      - 0.0005
+      - 0.0001
+      - 0.00005
+      - 0.00001
+  metric_to_optimize: "f1_score"
+
+# ── Eksperimen 7: Quick Smoke Test ───────────────────────────────────────────
+# Eksperimen cepat untuk verifikasi pipeline (sedikit epoch, data kecil).
+
+smoke_test:
+  name: "Quick Smoke Test"
+  description: >
+    Eksperimen ringan untuk memverifikasi seluruh pipeline berjalan
+    tanpa error. Menggunakan epoch sedikit dan data kecil.
+  experiment_type: "model_comparison"
+  model_types:
+    - mlp
+    - lstm
+  overrides:
+    mlp:
+      training:
+        epochs: 3
+        batch_size: 32
+    lstm:
+      training:
+        epochs: 3
+        batch_size: 32
+  data_overrides:
+    dummy_data:
+      num_patients: 100
+      num_events_per_patient: 10
