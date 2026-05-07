@@ -1,0 +1,69 @@
+# =============================================================================
+# docker-compose.yaml - Predictive Healthcare MEDS
+# =============================================================================
+# Orchestrates the API server and MLflow tracking server.
+#
+# Usage:
+#   docker-compose up --build          # Start all services
+#   docker-compose up -d               # Start in background
+#   docker-compose logs -f api         # View API logs
+#   docker-compose down                # Stop all services
+
+version: "3.8"
+
+services:
+  # ── FastAPI Model Serving ──────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: healthcare-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_CHECKPOINT=results/models/lstm_final.pt
+      - MODEL_CONFIG=configs/model_config.yaml
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - ./results/models:/app/results/models:ro
+      - ./results/predictions:/app/results/predictions
+      - ./configs:/app/configs:ro
+    depends_on:
+      mlflow:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── MLflow Tracking Server ─────────────────────────────────────────────────
+  mlflow:
+    image: python:3.10-slim
+    container_name: healthcare-mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+    command: >
+      bash -c "pip install mlflow==2.14.0 &&
+               mlflow server
+               --host 0.0.0.0
+               --port 5000
+               --backend-store-uri sqlite:///mlflow/mlflow.db
+               --default-artifact-root /mlflow/artifacts"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mlflow_data:
+    driver: local
